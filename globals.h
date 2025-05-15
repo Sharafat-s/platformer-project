@@ -2,6 +2,7 @@
 #define GLOBALS_H
 
 #include "raylib.h"
+#include "enemies_controller.h"
 
 #include <vector>
 #include <string>
@@ -127,14 +128,14 @@ inline const int MAX_PLAYER_LIVES = 3;
 inline int player_lives = MAX_PLAYER_LIVES;
 
 /* Enemy data */
-
+/*
 struct Enemy {
     Vector2 pos;
     bool is_looking_right;
 };
 
 inline std::vector<Enemy> enemies;
-
+*/
 /* Graphic Metrics */
 
 // UI
