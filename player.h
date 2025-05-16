@@ -1,8 +1,270 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <array>
 #include "globals.h"
+#include "player_movement.h"
 
+class Player {
+public:
+    static Player& get_instance() {
+        static Player instance;
+        return instance;
+    }
+
+    // Basic stat methods
+    void reset_player_stats() {
+        lives = MAX_LIVES;
+        level_scores.fill(0);
+    }
+
+    void increment_score() {
+        PlaySound(coin_sound);
+        level_scores[level_index]++;
+    }
+
+    int get_total_player_score() const {
+        int sum = 0;
+        for (int score : level_scores)
+            sum += score;
+        return sum;
+    }
+
+    int get_player_lives() const { return lives; }
+
+
+    // // Movement interface (implemented in PlayerMovement)
+    // void move_player_horizontally(float delta);
+    // void update_gravity();
+    // void update();
+
+    inline void Player::move_player_horizontally(float delta) {
+        PlayerMovement::move_horizontally(*this, delta);
+    }
+
+    inline void Player::update_player_gravity() {
+        PlayerMovement::update_gravity(*this);
+    }
+
+    inline void Player::update_player() {
+        PlayerMovement::update(*this);
+    }
+
+    inline void Player::spawn_player() {
+        y_velocity = 0;
+
+        for (size_t row = 0; row < current_level.rows; ++row) {
+            for (size_t column = 0; column < current_level.columns; ++column) {
+                char cell = get_level_cell(row, column);
+                if (cell == PLAYER) {
+                    position.x = column;
+                    position.y = row;
+                    set_level_cell(row, column, AIR);
+                    return;
+                }
+            }
+        }
+    }
+
+    inline void Player::kill_player() {
+        PlaySound(player_death_sound);
+        game_state = DEATH_STATE;
+        lives--;
+        level_scores[level_index] = 0;
+    }
+
+
+    Vector2 get_player_pos() const { return position; }
+    void set_position(Vector2 pos) { position = pos; }
+
+    float get_player_y_velocity() const { return y_velocity; }
+    void set_player_y_velocity(float vel) { y_velocity = vel; }
+
+    bool is_player_on_ground() const { return on_ground; }
+    void set_player_on_ground(bool val) { on_ground = val; }
+
+    bool is_looking_forward() const { return looking_forward; }
+    void set_looking_forward(bool val) { looking_forward = val; }
+
+    bool is_moving() const { return moving; }
+    void set_moving(bool val) { moving = val; }
+
+    int get_time_to_coin_counter() const { return time_to_coin_counter; }
+    void increment_time_to_coin_counter(int v) { time_to_coin_counter += v; }
+    void reset_time_to_coin_counter() { time_to_coin_counter = 0; }
+
+private:
+    Player();
+    Player(const Player&) = delete;
+    Player& operator=(const Player&) = delete;
+
+    float y_velocity = 0;
+    Vector2 position = {0, 0};
+
+    bool on_ground = false;
+    bool looking_forward = true;
+    bool moving = false;
+
+    int lives = MAX_LIVES;
+    std::array<int, LEVEL_COUNT> level_scores{};
+    int time_to_coin_counter = 0;
+
+    static constexpr int MAX_LIVES = 3;
+};
+inline Player::Player() {}
+
+
+
+#endif
+
+/*
+class Player {
+public:
+    static Player &get_instance () {
+        static Player instance;
+        return instance;
+    }
+    static const int MAX_PLAYER_LIVES = 3;
+
+    Player() = default; // private constructor for singleton
+    Player(const Player&) = delete;
+    Player& operator=(const Player&) = delete;
+
+    void reset_player_stats();
+
+    void increment_player_score();
+
+    int get_total_player_score();
+
+    int get_total_player_score() const;
+
+    void spawn_player();
+
+    void kill_player();
+
+    void move_player_horizontally(float delta);
+
+    void update_player_gravity();
+
+    void update_player();
+
+    Vector2 get_player_pos() const { return player_pos; }
+
+    void set_player_pos(const Vector2 &player_pos) {
+        this->player_pos = player_pos;
+    }
+
+    int get_player_lives() const { return player_lives; }
+
+    [[nodiscard]] float get_player_y_velocity() const {
+        return player_y_velocity;
+    }
+
+    void set_player_y_velocity(const float player_y_velocity) {
+        this->player_y_velocity = player_y_velocity;
+    }
+
+    [[nodiscard]] bool is_player_on_ground() const {
+        return player_on_ground;
+    }
+
+    void set_player_on_ground(const bool is_player_on_ground) {
+        this->player_on_ground = is_player_on_ground;
+    }
+
+    [[nodiscard]] int get_time_to_coin_counter() const {
+        return time_to_coin_counter;
+    }
+
+    void set_time_to_coin_counter(const int time_to_coin_counter) {
+        this->time_to_coin_counter = time_to_coin_counter;
+    }
+
+    void increment_time_to_coin_counter(int value) {
+        time_to_coin_counter += value;
+    }
+
+    void reset_time_to_coin_counter() {
+        time_to_coin_counter = 0;
+    }
+
+    [[nodiscard]] bool is_looking_forward() const {
+        return looking_forward;
+    }
+
+    void set_looking_forward(const bool is_looking_forward) {
+        this->looking_forward = is_looking_forward;
+    }
+
+    [[nodiscard]] bool is_moving() const {
+        return moving;
+    }
+
+    void set_moving(const bool is_moving) {
+        this->moving = is_moving;
+    }
+
+private:
+    float player_y_velocity = 0;
+    Vector2 player_pos;
+
+    bool player_on_ground;
+    bool looking_forward;
+    bool moving;
+
+    int player_lives;
+    std::array<int, LEVEL_COUNT> player_level_scores;
+    int time_to_coin_counter;
+
+};
+
+// === Inline implementations ===
+
+inline void Player::reset_player_stats() {
+    player_lives = MAX_PLAYER_LIVES;
+    for (int i = 0; i < LEVEL_COUNT; i++) {
+        player_level_scores[i] = 0;
+    }
+}
+
+inline void Player::increment_player_score() {
+    PlaySound(coin_sound);
+    player_level_scores[level_index]++;
+}
+
+inline int Player::get_total_player_score() {
+    int sum = 0;
+    for (int i = 0; i < LEVEL_COUNT; i++) {
+        sum += player_level_scores[i];
+    }
+    return sum;
+}
+
+inline void Player::spawn_player() {
+    player_y_velocity = 0;
+
+    for (size_t row = 0; row < current_level.rows; ++row) {
+        for (size_t column = 0; column < current_level.columns; ++column) {
+            char cell = get_level_cell(row, column);;
+
+            if (cell == PLAYER) {
+                player_pos.x = column;
+                player_pos.y = row;
+                set_level_cell(row, column, AIR);
+                return;
+            }
+        }
+    }
+}
+
+inline void Player::kill_player() {
+    PlaySound(player_death_sound);
+    game_state = DEATH_STATE;
+    player_lives--;
+    player_level_scores[level_index] = 0;
+}
+*/
+/*
 void reset_player_stats() {
     player_lives = MAX_PLAYER_LIVES;
     for (int i = 0; i < LEVEL_COUNT; i++) {
@@ -141,4 +403,5 @@ void update_player() {
     }
 }
 
-#endif //PLAYER_H
+#endif
+*/
