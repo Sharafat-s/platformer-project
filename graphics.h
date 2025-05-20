@@ -1,10 +1,19 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <iostream>
+#include "enemies_controller.h"
 #include "globals.h"
 #include "Player.h"
+#include "level_manager.h"
+#include "level.h"
 
-void draw_text(Text &text) {
+inline void draw_text(Text &text) {
+    if (!text.font) {
+        TraceLog(LOG_ERROR, "Font is null in draw_text");
+        return;
+    }
+
     // Measure the text, center it to the required position, and draw it
     Vector2 dimensions = MeasureTextEx(*text.font, text.str.c_str(), text.size * screen_scale, text.spacing);
 
@@ -16,12 +25,14 @@ void draw_text(Text &text) {
     DrawTextEx(*text.font, text.str.c_str(), pos, dimensions.y, text.spacing, text.color);
 }
 
-void derive_graphics_metrics_from_loaded_level() {
+inline void derive_graphics_metrics_from_loaded_level() {
     // Level and UI setup
     screen_size.x = static_cast<float>(GetScreenWidth());
     screen_size.y = static_cast<float>(GetScreenHeight());
 
-    cell_size = screen_size.y / static_cast<float>(LEVELS[level_index].rows);
+    /////// Level& current_level = LevelManager::get_level();
+
+    cell_size = screen_size.y / static_cast<float>(Level::get_instance().get_current_level().rows);
     screen_scale = std::min(screen_size.x, screen_size.y) / SCREEN_SCALE_DIVISOR;
 
     // Parallax background setup
@@ -36,7 +47,7 @@ void derive_graphics_metrics_from_loaded_level() {
     background_y_offset = (screen_size.y - background_size.y) * 0.5f;
 }
 
-void draw_parallax_background() {
+inline void draw_parallax_background() {
     // First uses the player's position
     float initial_offset = -(Player::get_instance().get_player_pos().x * PARALLAX_PLAYER_SCROLLING_SPEED + game_frame *
                              PARALLAX_IDLE_SCROLLING_SPEED);
@@ -71,7 +82,18 @@ void draw_parallax_background() {
     draw_image(foreground, {foreground_offset, background_y_offset}, background_size.x, background_size.y);
 }
 
-void draw_game_overlay() {
+inline void draw_image(const Texture2D &image, Vector2 pos, float width, float height) {
+    DrawTexturePro(
+        image,
+        {0, 0, (float) image.width, (float) image.height},
+        {pos.x, pos.y, width, height},
+        {0, 0},
+        0.0f,
+        WHITE
+    );
+}
+
+inline void draw_game_overlay() {
     const float ICON_SIZE = 48.0f * screen_scale;
 
     float slight_vertical_offset = 8.0f;
@@ -89,28 +111,37 @@ void draw_game_overlay() {
     DrawTextEx(menu_font, std::to_string(timer / 60).c_str(), timer_position, ICON_SIZE, 2.0f, WHITE);
 
     // Score
-    Vector2 score_dimensions = MeasureTextEx(menu_font, std::to_string(Player::get_instance().get_total_player_score()).c_str(), ICON_SIZE,
-                                             2.0f);
+    Vector2 score_dimensions = MeasureTextEx(
+        menu_font, std::to_string(Player::get_instance().get_total_player_score()).c_str(), ICON_SIZE,
+        2.0f);
     Vector2 score_position = {GetRenderWidth() - score_dimensions.x - ICON_SIZE, slight_vertical_offset};
-    DrawTextEx(menu_font, std::to_string(Player::get_instance().get_total_player_score()).c_str(), score_position, ICON_SIZE, 2.0f, WHITE);
+    DrawTextEx(menu_font, std::to_string(Player::get_instance().get_total_player_score()).c_str(), score_position,
+               ICON_SIZE, 2.0f, WHITE);
     draw_sprite(coin_sprite, {GetRenderWidth() - ICON_SIZE, slight_vertical_offset}, ICON_SIZE);
 }
 
-void draw_level() {
+inline void draw_level() {
     // Move the x-axis' center to the middle of the screen
     horizontal_shift = (screen_size.x - cell_size) / 2;
 
-    for (size_t row = 0; row < current_level.rows; ++row) {
-        for (size_t column = 0; column < current_level.columns; ++column) {
+    Level &current_level = Level::get_instance();
+
+    if (!current_level.get_current_level_data()) {
+        TraceLog(LOG_FATAL, "Level data is null before draw_level()");
+        exit(EXIT_FAILURE);
+    }
+
+    int rows = current_level.get_current_level().rows;
+    int columns = current_level.get_current_level().columns;
+
+    for (int row = 0; row < rows; ++row) {
+        for (int column = 0; column < columns; ++column) {
             Vector2 pos = {
-                // Move the level to the left as the player advances to the right,
-                // shifting to the left to allow the player to be centered later
                 (static_cast<float>(column) - Player::get_instance().get_player_pos().x) * cell_size + horizontal_shift,
                 static_cast<float>(row) * cell_size
             };
 
-            // Draw the level itself
-            char cell = get_level_cell(row, column);
+            char cell = current_level.get_level_cell(row, column);
             switch (cell) {
                 case WALL:
                     draw_image(wall_image, pos, cell_size);
@@ -132,12 +163,107 @@ void draw_level() {
             }
         }
     }
-
     draw_player();
     draw_enemies();
 }
 
-void draw_player() {
+
+// inline void draw_level() {
+//     // Move the x-axis' center to the middle of the screen
+//     horizontal_shift = (screen_size.x - cell_size) / 2;
+//
+//     level& current_level = LevelManager::get_level();
+//
+//     if (!Level::get_instance().get_current_level_data()) {
+//         TraceLog(LOG_FATAL, "Level data is null before draw_level()");
+//         exit(EXIT_FAILURE);
+//     }
+//
+//     for (size_t row = 0; row < current_level.get_current_level().rows; ++row) {
+//         for (size_t column = 0; column < current_level.get_current_level().columns; ++column) {
+//             Vector2 pos = {
+//                 (static_cast<float>(column) - Player::get_instance().get_player_pos().x) * cell_size + horizontal_shift,
+//                 static_cast<float>(row) * cell_size
+//             };
+//
+//             char cell = current_level.at(row, column);
+//             switch (cell) {
+//                 case WALL:
+//                     draw_image(wall_image, pos, cell_size);
+//                 break;
+//                 case WALL_DARK:
+//                     draw_image(wall_dark_image, pos, cell_size);
+//                 break;
+//                 case SPIKE:
+//                     draw_image(spike_image, pos, cell_size);
+//                 break;
+//                 case COIN:
+//                     draw_sprite(coin_sprite, pos, cell_size);
+//                 break;
+//                 case EXIT:
+//                     draw_image(exit_image, pos, cell_size);
+//                 break;
+//                 default:
+//                     break;
+//             }
+//         }
+//     }
+//     draw_player();
+//     draw_enemies();
+// }
+
+inline void draw_image(Texture2D &image, Vector2 pos, float size) {
+    draw_image(image, pos, size, size);
+}
+
+//
+// inline void draw_image(const Texture2D& image, Vector2 pos, float width, float height) {
+//     Rectangle source = { 0.0f, 0.0f, static_cast<float>(image.width), static_cast<float>(image.height) };
+//     Rectangle destination = { pos.x, pos.y, width, height };
+//     DrawTexturePro(image, source, destination, { 0.0f, 0.0f }, 0.0f, WHITE);
+// }
+
+// void draw_level() {
+//     // Move the x-axis' center to the middle of the screen
+//     horizontal_shift = (screen_size.x - cell_size) / 2;
+//
+//     for (size_t row = 0; row < current_level.rows; ++row) {
+//         for (size_t column = 0; column < current_level.columns; ++column) {
+//             Vector2 pos = {
+//                 // Move the level to the left as the player advances to the right,
+//                 // shifting to the left to allow the player to be centered later
+//                 (static_cast<float>(column) - Player::get_instance().get_player_pos().x) * cell_size + horizontal_shift,
+//                 static_cast<float>(row) * cell_size
+//             };
+//
+//             // Draw the level itself
+//             char cell = get_level_cell(row, column);
+//             switch (cell) {
+//                 case WALL:
+//                     draw_image(wall_image, pos, cell_size);
+//                     break;
+//                 case WALL_DARK:
+//                     draw_image(wall_dark_image, pos, cell_size);
+//                     break;
+//                 case SPIKE:
+//                     draw_image(spike_image, pos, cell_size);
+//                     break;
+//                 case COIN:
+//                     draw_sprite(coin_sprite, pos, cell_size);
+//                     break;
+//                 case EXIT:
+//                     draw_image(exit_image, pos, cell_size);
+//                     break;
+//                 default:
+//                     break;
+//             }
+//         }
+//     }
+//     draw_player();
+//     draw_enemies();
+// }
+
+inline void draw_player() {
     horizontal_shift = (screen_size.x - cell_size) / 2;
 
     // Shift the camera to the center of the screen to allow to see what is in front of the player
@@ -149,13 +275,19 @@ void draw_player() {
     // Pick an appropriate sprite for the player
     if (game_state == GAME_STATE) {
         if (!Player::get_instance().is_player_on_ground()) {
-            draw_image((Player::get_instance().is_looking_forward() ? player_jump_forward_image : player_jump_backwards_image), pos, cell_size);
+            draw_image((Player::get_instance().is_looking_forward()
+                            ? player_jump_forward_image
+                            : player_jump_backwards_image), pos, cell_size);
         } else if (Player::get_instance().is_moving()) {
-            draw_sprite((Player::get_instance().is_looking_forward() ? player_walk_forward_sprite : player_walk_backwards_sprite), pos,
+            draw_sprite((Player::get_instance().is_looking_forward()
+                             ? player_walk_forward_sprite
+                             : player_walk_backwards_sprite), pos,
                         cell_size);
             Player::get_instance().set_moving(false);
         } else {
-            draw_image((Player::get_instance().is_looking_forward() ? player_stand_forward_image : player_stand_backwards_image), pos,
+            draw_image((Player::get_instance().is_looking_forward()
+                            ? player_stand_forward_image
+                            : player_stand_backwards_image), pos,
                        cell_size);
         }
     } else {
@@ -163,7 +295,7 @@ void draw_player() {
     }
 }
 
-void draw_enemies() {
+inline void draw_enemies() {
     // Go over all enemies and draw them, once again accounting to the player's movement and horizontal shift
     for (auto &enemy: EnemiesController::get_instance().get_enemies()) {
         horizontal_shift = (screen_size.x - cell_size) / 2;
@@ -178,16 +310,16 @@ void draw_enemies() {
 }
 
 // Menus
-void draw_menu() {
+inline void draw_menu() {
     draw_text(game_title);
     draw_text(game_subtitle);
 }
 
-void draw_pause_menu() {
+inline void draw_pause_menu() {
     draw_text(game_paused);
 }
 
-void draw_death_screen() {
+inline void draw_death_screen() {
     draw_parallax_background();
     draw_level();
     draw_game_overlay();
@@ -196,12 +328,12 @@ void draw_death_screen() {
     draw_text(death_subtitle);
 }
 
-void draw_game_over_menu() {
+inline void draw_game_over_menu() {
     draw_text(game_over_title);
     draw_text(game_over_subtitle);
 }
 
-void create_victory_menu_background() {
+inline void create_victory_menu_background() {
     for (auto &ball: victory_balls) {
         ball.x = rand_up_to(screen_size.x);
         ball.y = rand_up_to(screen_size.y);
@@ -215,16 +347,16 @@ void create_victory_menu_background() {
         ball.radius *= screen_scale;
     }
 
-    /* Clear both the front buffer and the back buffer to avoid ghosting of the game graphics. */
-    ClearBackground(BLACK);
-    EndDrawing();
-    BeginDrawing();
-    ClearBackground(BLACK);
-    EndDrawing();
-    BeginDrawing();
+    // /* Clear both the front buffer and the back buffer to avoid ghosting of the game graphics. */
+    // ClearBackground(BLACK);
+    // EndDrawing();
+    // BeginDrawing();
+    // ClearBackground(BLACK);
+    // EndDrawing();
+    // BeginDrawing();
 }
 
-void animate_victory_menu_background() {
+inline void animate_victory_menu_background() {
     for (auto &ball: victory_balls) {
         ball.x += ball.dx;
         if (ball.x - ball.radius < 0 ||
@@ -239,13 +371,13 @@ void animate_victory_menu_background() {
     }
 }
 
-void draw_victory_menu_background() {
+inline void draw_victory_menu_background() {
     for (auto &ball: victory_balls) {
         DrawCircleV({ball.x, ball.y}, ball.radius, VICTORY_BALL_COLOR);
     }
 }
 
-void draw_victory_menu() {
+inline void draw_victory_menu() {
     DrawRectangle(
         0, 0,
         static_cast<int>(screen_size.x), static_cast<int>(screen_size.y),
@@ -257,6 +389,14 @@ void draw_victory_menu() {
 
     draw_text(victory_title);
     draw_text(victory_subtitle);
+}
+
+inline float rand_from_to(float min, float max) {
+    return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+}
+
+inline float rand_up_to(float max) {
+    return static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / max));
 }
 
 #endif //GRAPHICS_H

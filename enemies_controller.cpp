@@ -1,24 +1,87 @@
 #include "enemies_controller.h"
 #include "globals.h"
+#include "level_manager.h"
+#include "level.h"
 
+// void EnemiesController::spawn_enemies() {
+//     // Create enemies, incrementing their amount every time a new one is created
+//     enemies.clear();
+//
+//     for (size_t row = 0; row < Level.get_rows(); ++row) {
+//         for (size_t column = 0; column < Level.get_columns(); ++column) {
+//             if (char cell = get_level_cell(row, column); cell == ENEMY) {
+//                 // Instantiate and add an enemy to the level
+//                 enemies.push_back({
+//                         {static_cast<float>(column), static_cast<float>(row)},
+//                         true
+//                 });
+//
+//                 set_level_cell(row, column, AIR);
+//             }
+//         }
+//     }
+// }
 void EnemiesController::spawn_enemies() {
-    // Create enemies, incrementing their amount every time a new one is created
     enemies.clear();
 
-    for (size_t row = 0; row < current_level.rows; ++row) {
-        for (size_t column = 0; column < current_level.columns; ++column) {
-            if (char cell = get_level_cell(row, column); cell == ENEMY) {
-                // Instantiate and add an enemy to the level
-                enemies.push_back({
-                        {static_cast<float>(column), static_cast<float>(row)},
-                        true
-                });
+    Level& level = Level::get_instance();
+    int rows = level.get_current_level().rows;
+    int columns = level.get_current_level().columns;
 
-                set_level_cell(row, column, AIR);
+    for (int row = 0; row < rows; ++row) {
+        for (int column = 0; column < columns; ++column) {
+            char& cell = level.get_level_cell(row, column);
+            if (cell == ENEMY) {
+                enemies.push_back({
+                    {static_cast<float>(column), static_cast<float>(row)},
+                    true
+                });
+                cell = AIR; // Clear enemy spawn marker
             }
         }
     }
 }
+
+// void EnemiesController::spawn_enemies() {
+//     enemies.clear();
+//
+//     Level& level = LevelManager::get_level();
+//     int rows = level.get_current_level().rows;
+//     int cols = level.get_current_level().columns;
+//
+//     for (int row = 0; row < rows; ++row) {
+//         for (int column = 0; column < cols; ++column) {
+//             char& cell = Level::get_instance().get_level_cell(row, column);
+//             if (cell == ENEMY) {
+//                 enemies.push_back({
+//                     {static_cast<float>(column), static_cast<float>(row)},
+//                     true
+//                 });
+//                 cell = AIR;
+//             }
+//         }
+//     }
+// }
+
+// void EnemiesController::spawn_enemies() {
+//     enemies.clear();
+//
+//     Level& level = LevelManager::get()
+//
+//
+//     for (size_t row = 0; row < level.get_rows(); ++row) {
+//         for (size_t column = 0; column < level.get_columns(); ++column) {
+//             if (char cell = level.at(row, column); cell == ENEMY) {
+//                 enemies.push_back({
+//                     {static_cast<float>(column), static_cast<float>(row)},
+//                     true
+//                 });
+//
+//                 level.at(row, column) = AIR;
+//             }
+//         }
+//     }
+// }
 
 void EnemiesController::update_enemies() {
     for (auto &enemy : enemies) {
@@ -27,7 +90,7 @@ void EnemiesController::update_enemies() {
         next_x += (enemy.is_looking_right() ? ENEMY_MOVEMENT_SPEED : -ENEMY_MOVEMENT_SPEED);
 
         // If its next position collides with a wall, turn around
-        if (is_colliding({next_x, enemy.get_pos().y}, WALL)) {
+        if (Level::get_instance().is_colliding({next_x, enemy.get_pos().y}, WALL)) {
             enemy.set_looking_right(!enemy.is_looking_right());
         }
         // Otherwise, keep moving

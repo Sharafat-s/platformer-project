@@ -1,23 +1,33 @@
 #include "player.h"
-#include "enemies_controller.h"
-#include <cmath>
 
-// --- Singleton instance ---
+#include <iostream>
+
+#include "enemies_controller.h"
+#include "level.h"
+#include "level_manager.h"
+
+//  Singleton instance
 Player& Player::get_instance() {
     static Player instance;
     return instance;
 }
 
-Player::Player() {}
+Player::Player() = default;
 
 void Player::reset_player_stats() {
     lives = MAX_LIVES;
-    level_scores.fill(0);
+    level_scores = std::vector<int>(LevelManager::get_instance().get_level_count(), 0);
 }
 
 void Player::increment_score() {
-    PlaySound(coin_sound);
-    level_scores[level_index]++;
+    int index = LevelManager::get_index();
+    if (index < 0 || index >= static_cast<int>(level_scores.size())) {
+        TraceLog(LOG_ERROR, "Invalid level index %d in increment_score()", index);
+        return;
+    }
+
+    level_scores[index]++;
+    //level_scores[LevelManager::get_index()]++;
 }
 
 int Player::get_total_player_score() const {
@@ -46,24 +56,68 @@ void Player::update_player() {
 void Player::spawn_player() {
     y_velocity = 0;
 
-    for (size_t row = 0; row < current_level.rows; ++row) {
-        for (size_t column = 0; column < current_level.columns; ++column) {
-            char cell = get_level_cell(row, column);
-            if (cell == PLAYER) {
-                position.x = column;
-                position.y = row;
-                set_level_cell(row, column, AIR);
+    Level& level = Level::get_instance();
+
+    // Scan the level grid for the PLAYER symbol
+    for (int row = 0; row < level.get_rows(); ++row) {
+        for (int col = 0; col < level.get_columns(); ++col) {
+            if (Level::get_level_cell(row, col) == PLAYER) {
+                position = { (float)col, (float)row };
+                Level::set_level_cell(row, col, AIR); // Clear player marker from level
+                std::cout << "Player spawned at: " << position.x << ", " << position.y << std::endl;
                 return;
             }
         }
     }
+
+    // Fallback if no '@' symbol found
+    std::cerr << "ERROR: No player spawn point '@' found in level data!\n";
+    position = {1.0f, 1.0f};  // Fallback spawn
 }
+
+// void Player::spawn_player() {
+//     y_velocity = 0;
+//
+//     //added
+//     std::cout << "Player spawned at: "
+//           << position.x << ", " << position.y << std::endl;
+//
+//     Level& level = Level::get_instance();
+//     for (size_t row = 0; row < level.get_rows(); ++row) {
+//         for (size_t column = 0; column < level.get_columns(); ++column) {
+//             char& cell = level.at(row, column);  // Read/write reference
+//             if (cell == PLAYER) {
+//                 position.x = column;
+//                 position.y = row;
+//                 cell = AIR;  // Clear the PLAYER cell
+//                 return;
+//             }
+//         }
+//     }
+// }
+
+// void Player::spawn_player() {
+//     y_velocity = 0;
+//
+//     Level& level = LevelManager::get();
+//     for (size_t row = 0; row < level.get_rows(); ++row) {
+//         for (size_t column = 0; column < level.get_columns(); ++column) {
+//             char cell = level.get_cell(row, column);
+//             if (cell == PLAYER) {
+//                 position.x = column;
+//                 position.y = row;
+//                 level.set_cell(row, column, AIR);
+//                 return;
+//             }
+//         }
+//     }
+// }
 
 void Player::kill_player() {
     PlaySound(player_death_sound);
     game_state = DEATH_STATE;
     lives--;
-    level_scores[level_index] = 0;
+    level_scores[LevelManager::get_index()] = 0;
 }
 
 Vector2 Player::get_player_pos() const { return position; }
@@ -85,6 +139,31 @@ int Player::get_time_to_coin_counter() const { return time_to_coin_counter; }
 void Player::increment_time_to_coin_counter(int v) { time_to_coin_counter += v; }
 void Player::reset_time_to_coin_counter() { time_to_coin_counter = 0; }
 
+bool is_colliding(Vector2 pos, char look_for) {
+    return Level::is_colliding(pos, look_for);
+}
+
+// char& Level::get_collider(Vector2 pos, char look_for) {
+//     for (int row = static_cast<int>(pos.y) - 1; row <= static_cast<int>(pos.y) + 1; ++row) {
+//         for (int col = static_cast<int>(pos.x) - 1; col <= static_cast<int>(pos.x) + 1; ++col) {
+//             if (!is_inside_level(row, col)) continue;
+//             if (get_level_cell(row, col) == look_for) {
+//                 Rectangle block_hitbox = {static_cast<float>(col), static_cast<float>(row), 1.0f, 1.0f};
+//                 if (CheckCollisionRecs({pos.x, pos.y, 1.0f, 1.0f}, block_hitbox)) {
+//                     return get_level_cell(row, col);
+//                 }
+//             }
+//         }
+//     }
+//
+//     // Instead of returning a possibly invalid cell
+//     static char dummy = AIR;  // Safe dummy fallback
+//     return dummy;
+// }
+
+// char& get_collider(Vector2 pos, char look_for) {
+//     return LevelManager::get().get_collider(pos, look_for);
+// }
 // PlayerMovement implementation
 namespace PlayerMovement {
 
@@ -132,8 +211,9 @@ namespace PlayerMovement {
         Vector2 pos = player.get_player_pos();
 
         if (is_colliding(pos, COIN)) {
-            get_collider(pos, COIN) = AIR;
+            Level::get_collider(pos, COIN) = AIR;
             player.increment_score();
+            PlaySound(coin_sound);
         }
 
         if (is_colliding(pos, EXIT)) {
@@ -145,14 +225,18 @@ namespace PlayerMovement {
                     player.reset_time_to_coin_counter();
                 }
             } else {
-                load_level(1);
+                LevelManager::load_next();
                 PlaySound(exit_sound);
             }
         } else {
             if (timer >= 0) timer--;
         }
 
-        if (is_colliding(pos, SPIKE) || pos.y > current_level.rows) {
+        // if (is_colliding(pos, SPIKE) || pos.y > LevelManager::get_raw_level().get_rows()) {
+        //     player.kill_player();
+        // }
+
+        if (is_colliding(pos, SPIKE) || pos.y > Level::get_instance().get_current_level().rows) {
             player.kill_player();
         }
 

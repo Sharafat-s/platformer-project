@@ -1,8 +1,9 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <array>
+#include <vector>
 #include "globals.h"
+#include "level_manager.h"
 
 class EnemiesController;
 
@@ -56,7 +57,8 @@ private:
     bool moving = false;
 
     int lives = MAX_LIVES;
-    std::array<int, LEVEL_COUNT> level_scores{};
+    std::vector<int> level_scores;
+    //std::array<int, LEVEL_COUNT> level_scores{};
     int time_to_coin_counter = 0;
 
     static constexpr int MAX_LIVES = 3;
