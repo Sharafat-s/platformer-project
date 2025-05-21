@@ -247,69 +247,7 @@ inline Text victory_subtitle = {
     &menu_font
 };
 
-// struct Text {
-//     std::string str;
-//     Vector2 position = {0.50f, 0.50f};
-//     float size = 32.0f;
-//     Color color = WHITE;
-//     float spacing = 4.0f;
-//     Font* font = &menu_font;
-// };
-//
-// inline Text game_title = {
-//     "Platformer",
-//     {0.50f, 0.50f},
-//     100.0f,
-//     RED
-// };
-//
-// inline Text game_subtitle = {
-//     "Press Enter to Start",
-//     {0.50f, 0.65f}
-// };
-//
-// inline Text game_paused = {
-//     "Press Escape to Resume"
-// };
-//
-// inline Text death_title = {
-//     "You Died!",
-//     {0.50f, 0.50f},
-//     80.0f,
-//     RED
-// };
-//
-// inline Text death_subtitle = {
-//     "Press Enter to Try Again",
-//     {0.50f, 0.65f}
-// };
-//
-// inline Text game_over_title = {
-//     "Game Over",
-//     {0.50f, 0.50f},
-//     120.0f,
-//     RED
-// };
-//
-// inline Text game_over_subtitle = {
-//     "Press Enter to Restart",
-//     {0.50f, 0.675f}
-// };
-//
-// inline Text victory_title = {
-//     "You Won!",
-//     {0.50f, 0.50f},
-//     100.0f,
-//     RED
-// };
-//
-// inline Text victory_subtitle = {
-//     "Press Enter to go back to menu",
-//     {0.50f, 0.65f}
-// };
-
 /* Images and Sprites */
-
 struct sprite {
     size_t frame_count    = 0;
     size_t frames_to_skip = 3;

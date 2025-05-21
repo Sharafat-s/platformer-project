@@ -3,24 +3,6 @@
 #include "level_manager.h"
 #include "level.h"
 
-// void EnemiesController::spawn_enemies() {
-//     // Create enemies, incrementing their amount every time a new one is created
-//     enemies.clear();
-//
-//     for (size_t row = 0; row < Level.get_rows(); ++row) {
-//         for (size_t column = 0; column < Level.get_columns(); ++column) {
-//             if (char cell = get_level_cell(row, column); cell == ENEMY) {
-//                 // Instantiate and add an enemy to the level
-//                 enemies.push_back({
-//                         {static_cast<float>(column), static_cast<float>(row)},
-//                         true
-//                 });
-//
-//                 set_level_cell(row, column, AIR);
-//             }
-//         }
-//     }
-// }
 void EnemiesController::spawn_enemies() {
     enemies.clear();
 
@@ -41,47 +23,6 @@ void EnemiesController::spawn_enemies() {
         }
     }
 }
-
-// void EnemiesController::spawn_enemies() {
-//     enemies.clear();
-//
-//     Level& level = LevelManager::get_level();
-//     int rows = level.get_current_level().rows;
-//     int cols = level.get_current_level().columns;
-//
-//     for (int row = 0; row < rows; ++row) {
-//         for (int column = 0; column < cols; ++column) {
-//             char& cell = Level::get_instance().get_level_cell(row, column);
-//             if (cell == ENEMY) {
-//                 enemies.push_back({
-//                     {static_cast<float>(column), static_cast<float>(row)},
-//                     true
-//                 });
-//                 cell = AIR;
-//             }
-//         }
-//     }
-// }
-
-// void EnemiesController::spawn_enemies() {
-//     enemies.clear();
-//
-//     Level& level = LevelManager::get()
-//
-//
-//     for (size_t row = 0; row < level.get_rows(); ++row) {
-//         for (size_t column = 0; column < level.get_columns(); ++column) {
-//             if (char cell = level.at(row, column); cell == ENEMY) {
-//                 enemies.push_back({
-//                     {static_cast<float>(column), static_cast<float>(row)},
-//                     true
-//                 });
-//
-//                 level.at(row, column) = AIR;
-//             }
-//         }
-//     }
-// }
 
 void EnemiesController::update_enemies() {
     for (auto &enemy : enemies) {

@@ -16,18 +16,22 @@ Player::Player() = default;
 
 void Player::reset_player_stats() {
     lives = MAX_LIVES;
+    int count = LevelManager::get_instance().get_level_count();
+    std::cout << "[reset_player_stats] level count = " << count << std::endl;
     level_scores = std::vector<int>(LevelManager::get_instance().get_level_count(), 0);
 }
 
 void Player::increment_score() {
     int index = LevelManager::get_index();
+    std::cout << "[increment_score] level index = " << index << ", scores.size = " << level_scores.size() << std::endl;
+
     if (index < 0 || index >= static_cast<int>(level_scores.size())) {
         TraceLog(LOG_ERROR, "Invalid level index %d in increment_score()", index);
         return;
     }
 
-    level_scores[index]++;
-    //level_scores[LevelManager::get_index()]++;
+    //level_scores[index]++;
+    level_scores[LevelManager::get_index()]++;
 }
 
 int Player::get_total_player_score() const {
@@ -220,23 +224,44 @@ namespace PlayerMovement {
             if (timer > 0) {
                 timer -= 25;
                 player.increment_time_to_coin_counter(5);
+
                 if (player.get_time_to_coin_counter() / 60 > 1) {
                     player.increment_score();
                     player.reset_time_to_coin_counter();
                 }
             } else {
-                LevelManager::load_next();
-                PlaySound(exit_sound);
+                PlaySound(exit_sound);  // Play sound before transition
+                LevelManager::load_next();  // This should correctly reload next level
             }
         } else {
             if (timer >= 0) timer--;
         }
 
+        // if (is_colliding(pos, EXIT)) {
+        //     if (timer > 0) {
+        //         timer -= 25;
+        //         player.increment_time_to_coin_counter(5);
+        //         if (player.get_time_to_coin_counter() / 60 > 1) {
+        //             player.increment_score();
+        //             player.reset_time_to_coin_counter();
+        //         }
+        //     } else {
+        //         LevelManager::load_next();
+        //         PlaySound(exit_sound);
+        //     }
+        // } else {
+        //     if (timer >= 0) timer--;
+        // }
+
         // if (is_colliding(pos, SPIKE) || pos.y > LevelManager::get_raw_level().get_rows()) {
         //     player.kill_player();
         // }
 
-        if (is_colliding(pos, SPIKE) || pos.y > Level::get_instance().get_current_level().rows) {
+        // if (is_colliding(pos, SPIKE) || pos.y > Level::get_instance().get_current_level().rows) {
+        //     player.kill_player();
+        // }
+
+        if (is_colliding(pos, SPIKE) || pos.y > static_cast<float>(Level::get_instance().get_rows())) {
             player.kill_player();
         }
 
