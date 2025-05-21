@@ -26,6 +26,4 @@ private:
     Vector2 pos;
     bool looking_right;
 };
-/*#include "globals.h"
-*/
 #endif //ENEMY_H

@@ -7,7 +7,7 @@
 #include "level_manager.h"
 
 //  Singleton instance
-Player& Player::get_instance() {
+Player &Player::get_instance() {
     static Player instance;
     return instance;
 }
@@ -30,13 +30,12 @@ void Player::increment_score() {
         return;
     }
 
-    //level_scores[index]++;
     level_scores[LevelManager::get_index()]++;
 }
 
 int Player::get_total_player_score() const {
     int sum = 0;
-    for (int score : level_scores)
+    for (int score: level_scores)
         sum += score;
     return sum;
 }
@@ -60,13 +59,12 @@ void Player::update_player() {
 void Player::spawn_player() {
     y_velocity = 0;
 
-    Level& level = Level::get_instance();
+    Level &level = Level::get_instance();
 
-    // Scan the level grid for the PLAYER symbol
     for (int row = 0; row < level.get_rows(); ++row) {
         for (int col = 0; col < level.get_columns(); ++col) {
             if (Level::get_level_cell(row, col) == PLAYER) {
-                position = { (float)col, (float)row };
+                position = {(float) col, (float) row};
                 Level::set_level_cell(row, col, AIR); // Clear player marker from level
                 std::cout << "Player spawned at: " << position.x << ", " << position.y << std::endl;
                 return;
@@ -76,46 +74,8 @@ void Player::spawn_player() {
 
     // Fallback if no '@' symbol found
     std::cerr << "ERROR: No player spawn point '@' found in level data!\n";
-    position = {1.0f, 1.0f};  // Fallback spawn
+    position = {1.0f, 1.0f}; // Fallback spawn
 }
-
-// void Player::spawn_player() {
-//     y_velocity = 0;
-//
-//     //added
-//     std::cout << "Player spawned at: "
-//           << position.x << ", " << position.y << std::endl;
-//
-//     Level& level = Level::get_instance();
-//     for (size_t row = 0; row < level.get_rows(); ++row) {
-//         for (size_t column = 0; column < level.get_columns(); ++column) {
-//             char& cell = level.at(row, column);  // Read/write reference
-//             if (cell == PLAYER) {
-//                 position.x = column;
-//                 position.y = row;
-//                 cell = AIR;  // Clear the PLAYER cell
-//                 return;
-//             }
-//         }
-//     }
-// }
-
-// void Player::spawn_player() {
-//     y_velocity = 0;
-//
-//     Level& level = LevelManager::get();
-//     for (size_t row = 0; row < level.get_rows(); ++row) {
-//         for (size_t column = 0; column < level.get_columns(); ++column) {
-//             char cell = level.get_cell(row, column);
-//             if (cell == PLAYER) {
-//                 position.x = column;
-//                 position.y = row;
-//                 level.set_cell(row, column, AIR);
-//                 return;
-//             }
-//         }
-//     }
-// }
 
 void Player::kill_player() {
     PlaySound(player_death_sound);
@@ -147,31 +107,9 @@ bool is_colliding(Vector2 pos, char look_for) {
     return Level::is_colliding(pos, look_for);
 }
 
-// char& Level::get_collider(Vector2 pos, char look_for) {
-//     for (int row = static_cast<int>(pos.y) - 1; row <= static_cast<int>(pos.y) + 1; ++row) {
-//         for (int col = static_cast<int>(pos.x) - 1; col <= static_cast<int>(pos.x) + 1; ++col) {
-//             if (!is_inside_level(row, col)) continue;
-//             if (get_level_cell(row, col) == look_for) {
-//                 Rectangle block_hitbox = {static_cast<float>(col), static_cast<float>(row), 1.0f, 1.0f};
-//                 if (CheckCollisionRecs({pos.x, pos.y, 1.0f, 1.0f}, block_hitbox)) {
-//                     return get_level_cell(row, col);
-//                 }
-//             }
-//         }
-//     }
-//
-//     // Instead of returning a possibly invalid cell
-//     static char dummy = AIR;  // Safe dummy fallback
-//     return dummy;
-// }
-
-// char& get_collider(Vector2 pos, char look_for) {
-//     return LevelManager::get().get_collider(pos, look_for);
-// }
 // PlayerMovement implementation
 namespace PlayerMovement {
-
-    void move_horizontally(Player& player, float delta) {
+    void move_horizontally(Player &player, float delta) {
         float next_x = player.get_player_pos().x + delta;
         Vector2 new_pos = player.get_player_pos();
 
@@ -189,7 +127,7 @@ namespace PlayerMovement {
             player.set_moving(true);
     }
 
-    void update_gravity(Player& player) {
+    void update_gravity(Player &player) {
         Vector2 pos = player.get_player_pos();
         float vel = player.get_player_y_velocity();
 
@@ -210,7 +148,7 @@ namespace PlayerMovement {
         player.set_player_on_ground(on_ground);
     }
 
-    void update(Player& player) {
+    void update(Player &player) {
         update_gravity(player);
         Vector2 pos = player.get_player_pos();
 
@@ -230,36 +168,12 @@ namespace PlayerMovement {
                     player.reset_time_to_coin_counter();
                 }
             } else {
-                PlaySound(exit_sound);  // Play sound before transition
-                LevelManager::load_next();  // This should correctly reload next level
+                PlaySound(exit_sound); // Play sound before transition
+                LevelManager::load_next(); // This should correctly reload next level
             }
         } else {
             if (timer >= 0) timer--;
         }
-
-        // if (is_colliding(pos, EXIT)) {
-        //     if (timer > 0) {
-        //         timer -= 25;
-        //         player.increment_time_to_coin_counter(5);
-        //         if (player.get_time_to_coin_counter() / 60 > 1) {
-        //             player.increment_score();
-        //             player.reset_time_to_coin_counter();
-        //         }
-        //     } else {
-        //         LevelManager::load_next();
-        //         PlaySound(exit_sound);
-        //     }
-        // } else {
-        //     if (timer >= 0) timer--;
-        // }
-
-        // if (is_colliding(pos, SPIKE) || pos.y > LevelManager::get_raw_level().get_rows()) {
-        //     player.kill_player();
-        // }
-
-        // if (is_colliding(pos, SPIKE) || pos.y > Level::get_instance().get_current_level().rows) {
-        //     player.kill_player();
-        // }
 
         if (is_colliding(pos, SPIKE) || pos.y > static_cast<float>(Level::get_instance().get_rows())) {
             player.kill_player();
@@ -276,5 +190,4 @@ namespace PlayerMovement {
             }
         }
     }
-
 }

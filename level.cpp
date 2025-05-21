@@ -1,4 +1,3 @@
-// level.cpp
 #include <iostream>
 #include <stdexcept>
 #include <raylib.h>
@@ -42,30 +41,6 @@ bool Level::load_all_levels(const std::string& filepath) {
     }
     return !levels.empty();
 }
-
-// void Level::init_levels(const std::string& filepath) {
-//     levels = Parser::parseRLL(filepath);
-//     LevelManager::get_level().set_level_count(static_cast<int>(levels.size()));
-//
-//     TraceLog(LOG_INFO, "Levels loaded: %zu", levels.size());
-//
-//     if (levels.empty()) {
-//         TraceLog(LOG_FATAL, "No levels loaded from %s", filepath.c_str());
-//         exit(EXIT_FAILURE);
-//     }
-//
-//     level_index = 0;
-//     load_level();
-// }
-//
-// void Level::load_level(int offset) {
-//     std::cout << "Level dimensions: "
-//           << LevelManager::get_level().get_current_level().rows
-//           << "x"
-//           << LevelManager::get_level().get_current_level().columns
-//           << std::endl;
-//
-//     if (levels.empty()) return;
 
 void Level::init_levels(const std::string& filepath) {
     levels = Parser::parseRLL(filepath);

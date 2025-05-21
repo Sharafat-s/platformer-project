@@ -56,7 +56,6 @@ void LevelManager::load_next() {
     }
 }
 
-
 void LevelManager::reset() {
     get_instance().level_index = 0;
     reload();
